@@ -1,4 +1,4 @@
-libfreenect (1:0.1.2+dfsg-6) unstable; urgency=low
+libfreenect (1:0.1.2+dfsg-6k4w1) unstable; urgency=low
 
   [ Nicolas Bourdaud ]
   * Make build system compatible with multiarch:
@@ -9,7 +9,10 @@ libfreenect (1:0.1.2+dfsg-6) unstable; urgency=low
   * Use dh_python2 instead of dh_pysupport.
   * Update manpages with keyboard shortcuts. (Closes: #663869)
 
- -- Yaroslav Halchenko <debian@onerussian.com>  Tue, 22 May 2012 12:55:02 -0400
+  [ Jan ]
+  * merge kinect for windows support
+
+ -- Jan <janlauff@buxtehude>  Fri, 30 Nov 2012 20:49:16 -0500
 
 libfreenect (1:0.1.2+dfsg-5) unstable; urgency=low
 
