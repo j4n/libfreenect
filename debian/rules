@@ -24,6 +24,7 @@ override_dh_auto_install:
 	mv debian/tmp/usr/bin/glview debian/tmp/usr/bin/freenect-glview
 	mv debian/tmp/usr/bin/glpclview debian/tmp/usr/bin/freenect-glpclview
 	mv debian/tmp/usr/bin/cppview debian/tmp/usr/bin/freenect-cppview
+	mv debian/tmp/usr/bin/record debian/tmp/usr/bin/fakenect-record
 
 override_dh_python2:
 	dh_python2 -p python-freenect
