@@ -67,10 +67,15 @@ GLuint gl_rgb_tex;
 freenect_context *f_ctx;
 freenect_device *f_dev;
 int freenect_angle = 0;
-int freenect_led;
 
 freenect_video_format requested_format = FREENECT_VIDEO_RGB;
 freenect_video_format current_format = FREENECT_VIDEO_RGB;
+
+freenect_smoothing_mode requested_smoothing = FREENECT_SMOOTHING_HOLE_FILLING_DEPTH_SMOOTHING_ENABLED;
+freenect_smoothing_mode current_smoothing = FREENECT_SMOOTHING_HOLE_FILLING_DEPTH_SMOOTHING_ENABLED;
+
+freenect_range_mode requested_range = FREENECT_RANGE_DEFAULT;
+freenect_range_mode current_range = FREENECT_RANGE_DEFAULT;
 
 pthread_cond_t gl_frame_cond = PTHREAD_COND_INITIALIZER;
 int got_rgb = 0;
@@ -179,29 +184,18 @@ void keyPressed(unsigned char key, int x, int y)
 			freenect_angle = -30;
 		}
 	}
-	if (key == '1') {
-		freenect_set_led(f_dev,LED_GREEN);
+	if (key == 'm') {
+		if (requested_smoothing == FREENECT_SMOOTHING_DISABLED)
+			requested_smoothing = FREENECT_SMOOTHING_HOLE_FILLING_DEPTH_SMOOTHING_ENABLED;
+		else
+			requested_smoothing = FREENECT_SMOOTHING_DISABLED;
 	}
-	if (key == '2') {
-		freenect_set_led(f_dev,LED_RED);
+	if (key == 'n') {
+		if (requested_range == FREENECT_RANGE_DEFAULT)
+			requested_range = FREENECT_RANGE_NEAR_MODE;
+		else
+			requested_range = FREENECT_RANGE_DEFAULT;
 	}
-	if (key == '3') {
-		freenect_set_led(f_dev,LED_YELLOW);
-	}
-	if (key == '4') {
-		freenect_set_led(f_dev,LED_BLINK_GREEN);
-	}
-	if (key == '5') {
-		// 5 is the same as 4
-		freenect_set_led(f_dev,LED_BLINK_GREEN);
-	}
-	if (key == '6') {
-		freenect_set_led(f_dev,LED_BLINK_RED_YELLOW);
-	}
-	if (key == '0') {
-		freenect_set_led(f_dev,LED_OFF);
-	}
-	freenect_set_tilt_degs(f_dev,freenect_angle);
 }
 
 void ReSizeGLScene(int Width, int Height)
@@ -335,10 +329,6 @@ void rgb_cb(freenect_device *dev, void *rgb, uint32_t timestamp)
 
 void *freenect_threadfunc(void *arg)
 {
-	int accelCount = 0;
-
-	freenect_set_tilt_degs(f_dev,freenect_angle);
-	freenect_set_led(f_dev,LED_RED);
 	freenect_set_depth_callback(f_dev, depth_cb);
 	freenect_set_video_callback(f_dev, rgb_cb);
 	freenect_set_video_mode(f_dev, freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, current_format));
@@ -348,27 +338,20 @@ void *freenect_threadfunc(void *arg)
 	freenect_start_depth(f_dev);
 	freenect_start_video(f_dev);
 
-	printf("'w'-tilt up, 's'-level, 'x'-tilt down, '0'-'6'-select LED mode, 'f'-video format\n");
-
 	while (!die && freenect_process_events(f_ctx) >= 0) {
-		//Throttle the text output
-		if (accelCount++ >= 2000)
-		{
-			accelCount = 0;
-			freenect_raw_tilt_state* state;
-			freenect_update_tilt_state(f_dev);
-			state = freenect_get_tilt_state(f_dev);
-			double dx,dy,dz;
-			freenect_get_mks_accel(state, &dx, &dy, &dz);
-			printf("\r raw acceleration: %4d %4d %4d  mks acceleration: %4f %4f %4f", state->accelerometer_x, state->accelerometer_y, state->accelerometer_z, dx, dy, dz);
-			fflush(stdout);
-		}
-
 		if (requested_format != current_format) {
 			freenect_stop_video(f_dev);
 			freenect_set_video_mode(f_dev, freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, requested_format));
 			freenect_start_video(f_dev);
 			current_format = requested_format;
+		}
+		if (requested_smoothing != current_smoothing){
+			freenect_set_smoothing_mode(f_dev, requested_smoothing);
+			current_smoothing = requested_smoothing;
+		}
+		if (requested_range != current_range){
+			freenect_set_range_mode(f_dev, requested_range);
+			current_range = requested_range;
 		}
 	}
 
@@ -411,8 +394,8 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	freenect_set_log_level(f_ctx, FREENECT_LOG_DEBUG);
-	freenect_select_subdevices(f_ctx, (freenect_device_flags)(FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA));
+	freenect_set_log_level(f_ctx, FREENECT_LOG_INFO);
+	freenect_select_subdevices(f_ctx, (freenect_device_flags)(FREENECT_DEVICE_CAMERA));
 
 	int nr_devices = freenect_num_devices (f_ctx);
 	printf ("Number of devices found: %d\n", nr_devices);
